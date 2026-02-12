@@ -75,7 +75,6 @@ export const useGetTenantById = (id: string, enabled: boolean = true) => {
       return fetchTenantById(id, token)
     },
     retry: false,
-    refetchOnMount: 'always',
     enabled: enabled && !!token && !!id,
   })
 }
@@ -236,7 +235,6 @@ export const useGetUserTenantById = (id: string, enabled: boolean = true) => {
       return fetchUserTenantById(id, token)
     },
     retry: false,
-    refetchOnMount: 'always',
     enabled: enabled && !!token && !!id,
   })
 }
@@ -453,7 +451,6 @@ export const useGetTenantByName = () => {
 
   return useMutation<TenantList | null, Error, string>({
     mutationFn: (tenantName: string) => {
-      console.log('tenantName', tenantName)
       if (!token) {
         throw new Error('No authentication token available')
       }

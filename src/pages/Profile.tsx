@@ -302,7 +302,9 @@ export const Profile = () => {
                                       : styles['role-viewer']
                                   }`}
                                 >
-                                  {tenant.role}
+                                  {tenant.role === 'super_admin'
+                                    ? 'Super Admin'
+                                    : tenant.role}
                                 </span>
                               </div>
                               {isSuperAdmin && isViewingOtherUser && (

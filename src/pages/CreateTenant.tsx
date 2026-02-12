@@ -76,9 +76,11 @@ const CreateTenant = () => {
 
   const { data: adminTenantData, isLoading: adminLoading } = useGetTenantById(
     tenantId || '',
+    isSuperAdmin,
   )
   const { data: userTenantData, isLoading: userLoading } = useGetUserTenantById(
     tenantId || '',
+    !isSuperAdmin,
   )
   const tenantData = isSuperAdmin ? adminTenantData : userTenantData
   const isTenantLoading = isSuperAdmin ? adminLoading : userLoading

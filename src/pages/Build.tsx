@@ -7,23 +7,17 @@ import {
   PhotoIcon,
   XMarkIcon,
 } from '@heroicons/react/16/solid'
-import { useEffect, useRef, useState, type ChangeEvent } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { useReportsMutation } from '@/hooks/useReports'
 import { useGroupsMutation } from '@/hooks/useGroups'
-import type {
-  DataSource,
-  StatusItemType,
-  StatusGroupType,
-} from '@/types/common'
+import type { StatusItemType, StatusGroupType } from '@/types/common'
 import { useDragAndDrop } from '@formkit/drag-and-drop/react'
 import StatusGroup from '@/components/StatusGroup'
 import { getStatusClass } from '@/utils/status'
 import { StatusItem } from '@/components/StatusItem'
 import { CheckBadgeIcon } from '@heroicons/react/24/solid'
 import EditLabel from '@/components/EditLabel'
-import { useAuth } from '@/auth/useAuth'
-import { fetchEncrypted } from '@/api/data'
+import { useGetUserTenants, useGetTenantReports } from '@/hooks/useTenants'
 import {
   useSavePageMutation,
   useGetPageQuery,
@@ -40,16 +34,10 @@ import styles from './Build.module.css'
 const BACKEND_API = import.meta.env.VITE_BACKEND_URI
 
 const Build = () => {
-  const { token } = useAuth()
   const { id: editId } = useParams<{ id?: string }>()
   const isEditMode = Boolean(editId)
 
-  const [dataSource, setDataSource] = useState<DataSource>({
-    api: '',
-    secret: '',
-  })
-
-  const [isEncrypted, setIsEncrypted] = useState(false)
+  const [tenantId, setTenantId] = useState<string>('')
   const [name, setName] = useState<string>('')
   const [slug, setSlug] = useState<string>('')
   const [statusGroups, setStatusGroups] = useState<StatusGroupType[]>([])
@@ -69,11 +57,18 @@ const Build = () => {
   )
 
   const savePageMutation = useSavePageMutation()
-  const updatePageMutation = useUpdatePageMutation(editId || '')
-  const getPageQuery = useGetPageQuery(editId || '')
+  const updatePageMutation = useUpdatePageMutation()
+  const getPageQuery = useGetPageQuery(tenantId || '', editId || '')
   const groupsMutation = useGroupsMutation()
   const [filterItems, setFilterItems] = useState('')
-  const reportsMutation = useReportsMutation()
+
+  const { data: tenantsData } = useGetUserTenants(1, 100, undefined, true)
+
+  const { data: reportsData, isLoading: reportsLoading } = useGetTenantReports(
+    tenantId,
+    undefined,
+    !!tenantId,
+  )
 
   // Track next group ID to avoid duplicate names when groups are deleted
   const nextGroupIdRef = useRef(1)
@@ -87,10 +82,7 @@ const Build = () => {
       setSlug(pageData.slug || 'untitled')
       setTitle(pageData.config?.title || '')
       setDesc(pageData.config?.description || '')
-      setDataSource({
-        api: pageData.api || '',
-        secret: pageData.secret || '',
-      })
+      setTenantId(pageData.tenant_id || '')
       setReport(pageData.report || '')
       setStatusGroups(pageData.config?.groups || [])
 
@@ -120,15 +112,6 @@ const Build = () => {
         }
       }
       setColumns(pageData.config?.theming?.columns || 'one')
-
-      // If we have data source info, automatically connect
-      if (pageData.api && pageData.secret && !reportsMutation.isPending) {
-        setIsEncrypted(true) // Assume stored secrets are encrypted
-        reportsMutation.mutate({
-          api: pageData.api,
-          secret: pageData.secret,
-        })
-      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isEditMode, JSON.stringify(getPageQuery.data)])
@@ -154,8 +137,7 @@ const Build = () => {
     const pageData = {
       name: name,
       slug: slug,
-      api: dataSource.api,
-      secret: dataSource.secret,
+      tenant_id: tenantId,
       report: report,
 
       config: {
@@ -180,81 +162,64 @@ const Build = () => {
 
     if (isEditMode && editId) {
       // Update existing page
-      updatePageMutation.mutate(pageData, {
-        onSuccess: () => {
-          toast.success('Page updated successfully!')
-          setSaved(true)
+      updatePageMutation.mutate(
+        { tenantId, pageId: editId, data: pageData },
+        {
+          onSuccess: () => {
+            toast.success('Page updated successfully!')
+            setSaved(true)
+          },
+          onError: (error: Error & { errors?: string[] }) => {
+            if (error.errors && error.errors.length > 0) {
+              toast.error(
+                <div>
+                  {error.errors?.map((err, idx) => (
+                    <div key={idx}>{err}</div>
+                  ))}
+                </div>,
+              )
+            } else {
+              toast.error(`Failed to update status page: ${error.message}`)
+            }
+          },
         },
-        onError: (error: Error & { errors?: string[] }) => {
-          if (error.errors && error.errors.length > 0) {
-            toast.error(
-              <div>
-                {error.errors?.map((err, idx) => (
-                  <div key={idx}>{err}</div>
-                ))}
-              </div>,
-            )
-          } else {
-            toast.error(`Failed to update status page: ${error.message}`)
-          }
-        },
-      })
+      )
     } else {
       // Create new page
-      savePageMutation.mutate(pageData, {
-        onSuccess: () => {
-          toast.success('Page created successfully!')
-          setSaved(true)
+      savePageMutation.mutate(
+        { tenantId, data: pageData },
+        {
+          onSuccess: () => {
+            toast.success('Page created successfully!')
+            setSaved(true)
+          },
+          onError: (error: Error & { errors?: string[] }) => {
+            if (error.errors && error.errors.length > 0) {
+              toast.error(
+                <div>
+                  {error.errors?.map((err, idx) => (
+                    <div key={idx}>{err}</div>
+                  ))}
+                </div>,
+              )
+            } else {
+              toast.error(`Failed to create status page: ${error.message}`)
+            }
+          },
         },
-        onError: (error: Error & { errors?: string[] }) => {
-          if (error.errors && error.errors.length > 0) {
-            toast.error(
-              <div>
-                {error.errors?.map((err, idx) => (
-                  <div key={idx}>{err}</div>
-                ))}
-              </div>,
-            )
-          } else {
-            toast.error(`Failed to create status page: ${error.message}`)
-          }
-        },
-      })
+      )
     }
   }
 
   useEffect(() => {
-    if (report !== '' && !groupsMutation.isPending)
-      groupsMutation.mutate({ ...dataSource, report: report })
+    if (report !== '' && tenantId !== '' && !groupsMutation.isPending)
+      groupsMutation.mutate({ tenantId, reportId: report })
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [report, dataSource])
+  }, [report, tenantId])
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (reportsMutation.isSuccess) {
-      reportsMutation.reset()
-      setDataSource({ api: '', secret: '' })
-      setIsEncrypted(false)
-    } else {
-      if (!isEncrypted) {
-        const encrypted = await fetchEncrypted(dataSource.secret, token || '')
-        setDataSource({ ...dataSource, secret: encrypted || '' })
-        setIsEncrypted(true)
-        reportsMutation.mutate({ api: dataSource.api, secret: encrypted })
-      } else {
-        reportsMutation.mutate(dataSource)
-      }
-    }
-  }
-
-  const handleInputChange = (
-    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
-  ): void => {
-    const { name, value } = e.target
-    setDataSource((prev) => ({
-      ...prev,
-      [name]: value,
-    }))
+  const handleTenantChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    setTenantId(event.target.value)
+    setReport('') // Reset report when tenant changes
   }
 
   const handleChangeItemAlias = (
@@ -586,66 +551,40 @@ const Build = () => {
                     <div className="pt-2 ps-2">
                       <h3 className="section-title">Data Source</h3>
                       <p className="section-description">
-                        Connect to your Argo-web-api endpoint.
+                        Select a tenant to access its reports.
                       </p>
                     </div>
 
                     <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Argo-web-api endpoint (URL):
+                          Tenant: <span className="required">*</span>
                         </label>
-                        <input
-                          type="text"
+                        <select
                           className="input w-full"
-                          placeholder="https://"
-                          name="api"
-                          value={dataSource.api}
-                          onChange={handleInputChange}
-                          disabled={reportsMutation.isSuccess}
-                        />
+                          value={tenantId}
+                          onChange={handleTenantChange}
+                        >
+                          <option value="">Select a tenant</option>
+                          {tenantsData?.content.map((tenant) => (
+                            <option key={tenant.id} value={tenant.id}>
+                              {tenant.info.name}
+                            </option>
+                          ))}
+                        </select>
                       </div>
 
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Access Token:
-                        </label>
-                        <input
-                          type="password"
-                          className="input w-full"
-                          placeholder="s3cr3t"
-                          name="secret"
-                          value={dataSource.secret}
-                          onChange={handleInputChange}
-                          disabled={reportsMutation.isSuccess}
-                        />
-                      </div>
-
-                      <button
-                        className="btn btn-outline w-full mt-2"
-                        onClick={handleSubmit}
-                      >
-                        {reportsMutation.isPending ? (
-                          <>
-                            <LoadingSpinner size="xs" />
-                            <span>Connecting ...</span>
-                          </>
-                        ) : reportsMutation.data ? (
-                          'Clear Connection'
-                        ) : (
-                          'Connect'
-                        )}
-                      </button>
-
-                      {reportsMutation.error && (
-                        <div className="p-3 bg-red-50 border border-red-200 rounded text-sm text-red-600">
-                          Error: {reportsMutation.error.message}
-                        </div>
-                      )}
-                      {reportsMutation.isSuccess && (
+                      {tenantId && reportsData && reportsData.length > 0 && (
                         <div className="p-3 bg-green-50 border border-green-200 rounded text-sm text-green-700 flex items-center">
                           <CheckBadgeIcon className="size-5 inline-block me-2" />
-                          Connected successfully
+                          {reportsData.length} report
+                          {reportsData.length !== 1 ? 's' : ''} available
+                        </div>
+                      )}
+
+                      {tenantId && reportsData && reportsData.length === 0 && (
+                        <div className="p-3 bg-yellow-50 border border-yellow-200 rounded text-sm text-yellow-700">
+                          No reports found for this tenant
                         </div>
                       )}
                     </div>
@@ -664,14 +603,22 @@ const Build = () => {
                       <p className="section-description mb-2">
                         Choose a report and manage items.
                       </p>
-                      {!reportsMutation.data && (
+                      {!tenantId && (
                         <div className="text-sm text-gray-500 p-4 text-center bg-gray-50 rounded mt-6">
-                          Connect to a data source in the Config tab to load
-                          reports
+                          Select a tenant in the Config tab to load reports
                         </div>
                       )}
 
-                      {reportsMutation.data && (
+                      {tenantId && reportsLoading && (
+                        <div className="p-4 text-center">
+                          <LoadingSpinner size="sm" inline />
+                          <span className="ml-2 text-sm text-gray-500">
+                            Loading reports...
+                          </span>
+                        </div>
+                      )}
+
+                      {tenantId && reportsData && reportsData.length > 0 && (
                         <>
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -686,8 +633,8 @@ const Build = () => {
                               <option value="" disabled={true}>
                                 Select a report
                               </option>
-                              {reportsMutation.data.map((item) => (
-                                <option key={item.name} value={item.name}>
+                              {reportsData.map((item) => (
+                                <option key={item.id} value={item.id}>
                                   {item.name}
                                 </option>
                               ))}
@@ -996,7 +943,7 @@ const Build = () => {
                       }
                     >
                       <Button
-                        disabled={!report || reportsMutation.isPending}
+                        disabled={!report || groupsMutation.isPending}
                         onClick={handleAddStatusGroup}
                         variant="outline-secondary"
                       >

@@ -5,7 +5,7 @@ import {
   useUpdateTenantStatusMutation,
 } from '@/hooks/useTenants'
 import { useAuth } from '@/auth/useAuth'
-import { useState } from 'react'
+import { useState, Fragment } from 'react'
 import {
   ArrowLeftIcon,
   CheckCircleIcon,
@@ -321,9 +321,8 @@ const TenantStatus = () => {
                     <div className={styles['progress-container']}>
                       <div className={styles['step-wrapper']}>
                         {getProgressSteps(job).map((step, index, array) => (
-                          <>
+                          <Fragment key={step.key}>
                             <div
-                              key={step.key}
                               className={`${styles.step} ${styles[getStepStatus(job, step.key)]}`}
                             >
                               <div className={styles['step-indicator']} />
@@ -334,7 +333,7 @@ const TenantStatus = () => {
                             {index < array.length - 1 && (
                               <div className={styles['step-line']} />
                             )}
-                          </>
+                          </Fragment>
                         ))}
                       </div>
                     </div>

@@ -73,12 +73,6 @@ const Tenants = () => {
 
   const isSuperAdmin = profile?.roles?.includes('super_admin')
 
-  const hasTenantAccess =
-    (!isSuperAdmin &&
-      userProfileData?.groups &&
-      userProfileData.groups.length > 0) ||
-    false
-
   const { data: adminData, isLoading: adminLoading } = useGetTenants(
     currentPage,
     pageSize,
@@ -89,7 +83,7 @@ const Tenants = () => {
     currentPage,
     pageSize,
     searchQuery,
-    hasTenantAccess,
+    !isSuperAdmin,
   )
 
   const data = isSuperAdmin ? adminData : userData
@@ -218,9 +212,7 @@ const Tenants = () => {
           <p className="page-subtitle">
             {isSuperAdmin
               ? 'Manage and create new tenants for the monitoring service'
-              : hasTenantAccess
-                ? 'View your tenants'
-                : null}
+              : 'View your tenants'}
           </p>
         </div>
         {isSuperAdmin && (
@@ -296,7 +288,7 @@ const Tenants = () => {
                               <span
                                 className={`${styles['role-badge']} ${styles['admin']}`}
                               >
-                                Admin
+                                Super Admin
                               </span>
                             )
                           }

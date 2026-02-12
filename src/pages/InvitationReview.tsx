@@ -14,7 +14,13 @@ import styles from './InvitationReview.module.css'
 export const InvitationReview = () => {
   const { id: invitationId } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { authenticated, initialized, registered, login } = useAuth()
+  const {
+    authenticated,
+    initialized,
+    registered,
+    login,
+    waitForTenantInProfile,
+  } = useAuth()
   const [isProcessing, setIsProcessing] = useState(false)
 
   const {
@@ -44,11 +50,19 @@ export const InvitationReview = () => {
         data: { action: 'ACCEPT' },
       },
       {
-        onSuccess: () => {
+        onSuccess: async () => {
           toast.success('Invitation accepted successfully!')
+
           setTimeout(() => {
             navigate('/tenants')
           }, 2000)
+
+          try {
+            // Refetch profile and wait until the new tenant appears in groups
+            await waitForTenantInProfile(invitation?.tenant_name, 5, 2000)
+          } catch (error) {
+            console.error('Failed to refetch profile:', error)
+          }
         },
         onError: (error) => {
           toast.error(`Failed to accept invitation: ${error.message}`)

@@ -463,6 +463,8 @@
 @media (max-width: 1024px) {
   .reports-container {
     grid-template-columns: 1fr;
+    min-height: auto;
+    gap: 1.5rem;
   }
 
   .reports-sidebar {

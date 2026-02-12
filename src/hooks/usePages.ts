@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/auth/useAuth'
 import {
+  fetchCheckSlug,
   fetchDeletePage,
   fetchPage,
   fetchPages,
@@ -12,12 +13,25 @@ import type { Page, PageContent } from '@/types/pages'
 export const useSavePageMutation = () => {
   const queryClient = useQueryClient()
   const { token } = useAuth()
-  return useMutation<PageContent, Error, PageContent>({
-    mutationFn: (data: PageContent) => {
+  return useMutation<
+    PageContent,
+    Error,
+    { tenantId: string; data: PageContent }
+  >({
+    mutationFn: ({
+      tenantId,
+      data,
+    }: {
+      tenantId: string
+      data: PageContent
+    }) => {
       if (!token) {
         throw new Error('No authentication token available')
       }
-      return fetchSavePage(data, token)
+      if (!tenantId) {
+        throw new Error('Tenant ID is required')
+      }
+      return fetchSavePage(tenantId, data, token)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['all-pages'] })
@@ -28,14 +42,29 @@ export const useSavePageMutation = () => {
   })
 }
 
-export const useUpdatePageMutation = (id: string) => {
+export const useUpdatePageMutation = () => {
   const { token } = useAuth()
-  return useMutation<PageContent, Error, PageContent>({
-    mutationFn: (data: PageContent) => {
+  return useMutation<
+    PageContent,
+    Error,
+    { tenantId: string; pageId: string; data: PageContent }
+  >({
+    mutationFn: ({
+      tenantId,
+      pageId,
+      data,
+    }: {
+      tenantId: string
+      pageId: string
+      data: PageContent
+    }) => {
       if (!token) {
         throw new Error('No authentication token available')
       }
-      return fetchUpdatePage(id, data, token)
+      if (!tenantId) {
+        throw new Error('Tenant ID is required')
+      }
+      return fetchUpdatePage(tenantId, pageId, data, token)
     },
     onError: (error) => {
       console.error('Page update error:', error)
@@ -43,36 +72,46 @@ export const useUpdatePageMutation = (id: string) => {
   })
 }
 
-export const useGetAllPagesQuery = (page: number = 1, size: number = 10) => {
+export const useGetAllPagesQuery = (
+  tenantId: string,
+  page: number = 1,
+  size: number = 10,
+) => {
   const { token } = useAuth()
 
   return useQuery<Page, Error>({
-    queryKey: ['all-pages', page, size],
+    queryKey: ['all-pages', tenantId, page, size],
     queryFn: () => {
       if (!token) {
         throw new Error('No authentication token available')
       }
-      return fetchPages(token, page, size)
+      if (!tenantId) {
+        throw new Error('Tenant ID is required')
+      }
+      return fetchPages(tenantId, token, page, size)
     },
-    enabled: !!token,
+    enabled: !!token && !!tenantId,
   })
 }
 
-export const useGetPageQuery = (id: string) => {
+export const useGetPageQuery = (tenantId: string, pageId: string) => {
   const { token } = useAuth()
 
   return useQuery<PageContent, Error>({
-    queryKey: ['page', id],
+    queryKey: ['page', tenantId, pageId],
     queryFn: () => {
       if (!token) {
         throw new Error('No authentication token available')
       }
-      if (!id) {
+      if (!tenantId) {
+        throw new Error('Tenant ID is required')
+      }
+      if (!pageId) {
         throw new Error('Page ID is required')
       }
-      return fetchPage(id, token)
+      return fetchPage(tenantId, pageId, token)
     },
-    enabled: !!token && !!id,
+    enabled: !!token && !!tenantId && !!pageId,
   })
 }
 
@@ -80,15 +119,24 @@ export const useDeletePageMutation = () => {
   const { token } = useAuth()
   const queryClient = useQueryClient()
 
-  return useMutation<string, Error, string>({
-    mutationFn: (id: string) => {
+  return useMutation<string, Error, { tenantId: string; pageId: string }>({
+    mutationFn: ({
+      tenantId,
+      pageId,
+    }: {
+      tenantId: string
+      pageId: string
+    }) => {
       if (!token) {
         throw new Error('No authentication token available')
       }
-      if (!id) {
+      if (!tenantId) {
+        throw new Error('Tenant ID is required')
+      }
+      if (!pageId) {
         throw new Error('Page ID is required')
       }
-      return fetchDeletePage(id, token)
+      return fetchDeletePage(tenantId, pageId, token)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['all-pages'] })
@@ -96,5 +144,30 @@ export const useDeletePageMutation = () => {
     onError: (error) => {
       console.error('Page delete error:', error)
     },
+  })
+}
+
+export const useCheckSlugQuery = (
+  tenantId: string,
+  slug: string,
+  enabled: boolean = true,
+) => {
+  const { token } = useAuth()
+
+  return useQuery<{ available: boolean }, Error>({
+    queryKey: ['check-slug', tenantId, slug],
+    queryFn: () => {
+      if (!token) {
+        throw new Error('No authentication token available')
+      }
+      if (!tenantId) {
+        throw new Error('Tenant ID is required')
+      }
+      if (!slug) {
+        throw new Error('Slug is required')
+      }
+      return fetchCheckSlug(tenantId, slug, token)
+    },
+    enabled: !!token && !!tenantId && !!slug && enabled,
   })
 }

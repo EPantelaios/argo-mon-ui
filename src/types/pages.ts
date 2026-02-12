@@ -1,4 +1,4 @@
-import type { StatusGroupType, StatusItemType } from '@/types/common'
+import type { StatusGroupType } from '@/types/common'
 
 export type Page = {
   content: PageContent[]
@@ -13,9 +13,8 @@ export type PageContent = {
   id?: string
   name: string
   slug: string
+  tenant_id: string
   report: string
-  api?: string
-  secret?: string
   created_at?: string
   updated_at?: string
   config?: PageConfig
@@ -38,10 +37,4 @@ export type PageTheming = {
   color?: string
   logo?: string
   columns?: string
-}
-
-export type PageGroup = {
-  name: string
-  alias: string
-  list: StatusItemType[]
 }

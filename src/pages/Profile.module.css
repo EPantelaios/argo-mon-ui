@@ -167,6 +167,7 @@
 }
 
 .tenant-item {
+  width: fit-content;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -194,7 +195,7 @@
 .tenant-info {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 1.2rem;
   flex: 1;
 }
 

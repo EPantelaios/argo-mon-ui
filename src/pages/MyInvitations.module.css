@@ -43,23 +43,23 @@
 }
 
 .th-email {
-  width: 27%;
+  width: 25%;
 }
 
 .th-role {
-  width: 15%;
-}
-
-.th-status {
-  width: 15%;
-}
-
-.th-created {
   width: 20%;
 }
 
+.th-status {
+  width: 20%;
+}
+
+.th-created {
+  width: 12%;
+}
+
 .th-actions {
-  width: 17%;
+  width: 12%;
 }
 
 .table-body {
@@ -95,7 +95,7 @@
 }
 
 .empty-actions {
-  width: 40%;
+  width: 50%;
   display: block;
   color: #6b7280;
   font-size: 0.875rem;

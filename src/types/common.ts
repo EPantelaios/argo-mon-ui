@@ -1,12 +1,3 @@
-export type DataSource = {
-  api: string
-  secret: string
-}
-
-export type DataSourceReport = DataSource & {
-  report: string
-}
-
 export type StatusGroupType = {
   name: string
   alias?: string
@@ -17,11 +8,6 @@ export type StatusItemType = {
   name: string
   alias?: string
   status: string
-}
-
-export type ItemDesc = {
-  name: string
-  description: string
 }
 
 export type Pages = {

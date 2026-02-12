@@ -43,9 +43,6 @@ export default function Layout() {
   const { authenticated, profile, login, logout } = useAuth()
 
   const isSuperAdmin = profile?.roles?.includes('super_admin')
-  const isAdmin = profile?.roles?.includes('admin')
-  const isViewer = profile?.roles?.includes('viewer')
-  const hasTenantsAccess = isSuperAdmin || isAdmin || isViewer
 
   return (
     <div className="h-screen flex overflow-hidden">
@@ -76,12 +73,10 @@ export default function Layout() {
               My Invitations
             </SidebarNavItem>
           )}
-          {hasTenantsAccess && (
-            <SidebarNavItem to="/tenants">
-              <ServerStackIcon className="size-5" aria-hidden />
-              Tenants
-            </SidebarNavItem>
-          )}
+          <SidebarNavItem to="/tenants">
+            <ServerStackIcon className="size-5" aria-hidden />
+            Tenants
+          </SidebarNavItem>
           {isSuperAdmin && (
             <SidebarNavItem to="/projects">
               <FolderIcon className="size-5" aria-hidden />
