@@ -1,9 +1,5 @@
 import { useState, useEffect } from 'react'
-import {
-  useGetTenants,
-  useGetUserTenants,
-  useDeleteTenantMutation,
-} from '@/hooks/useTenants'
+import { useGetUserTenants, useDeleteTenantMutation } from '@/hooks/useTenants'
 import { useGetUserProfile } from '@/hooks/useProfile'
 import { useAuth } from '@/auth/useAuth'
 import {
@@ -76,21 +72,11 @@ const Tenants = () => {
 
   const isSuperAdmin = profile?.roles?.includes('super_admin')
 
-  const { data: adminData, isLoading: adminLoading } = useGetTenants(
+  const { data, isLoading } = useGetUserTenants(
     currentPage,
     pageSize,
     searchQuery,
-    isSuperAdmin,
   )
-  const { data: userData, isLoading: userLoading } = useGetUserTenants(
-    currentPage,
-    pageSize,
-    searchQuery,
-    !isSuperAdmin,
-  )
-
-  const data = isSuperAdmin ? adminData : userData
-  const isLoading = isSuperAdmin ? adminLoading : userLoading
 
   const deleteMutation = useDeleteTenantMutation()
 
@@ -258,205 +244,210 @@ const Tenants = () => {
         </div>
       ) : (
         <div className={styles.grid}>
-          {tenants && tenants?.length > 0 ? (
-            tenants.map((tenant) => (
-              <div key={tenant.id} className={styles.card}>
-                <div className={styles['card-content']}>
-                  <div className={styles['card-header']}>
-                    <div className={styles['image-container']}>
-                      {tenant.image ? (
-                        <img
-                          className={styles['tenant-image']}
-                          src={tenant.image}
-                        />
-                      ) : (
-                        <div className={styles['tenant-fallback']}>
-                          <span className={styles['fallback-text']}>
-                            {tenant.email.charAt(0).toUpperCase()}
-                          </span>
+          {tenants && tenants?.length > 0
+            ? tenants.map((tenant) => (
+                <div key={tenant.id} className={styles.card}>
+                  <div className={styles['card-content']}>
+                    <div className={styles['card-header']}>
+                      <div className={styles['image-container']}>
+                        {tenant.image ? (
+                          <img
+                            className={styles['tenant-image']}
+                            src={tenant.image}
+                          />
+                        ) : (
+                          <div className={styles['tenant-fallback']}>
+                            <span className={styles['fallback-text']}>
+                              {tenant.name.charAt(0).toUpperCase()}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                      <div className={styles['info-container']}>
+                        <div className={styles['name-role-container']}>
+                          <h3
+                            className={styles['tenant-name']}
+                            title={tenant.name}
+                          >
+                            {tenant.name}
+                          </h3>
+                          {(() => {
+                            if (isSuperAdmin) {
+                              return (
+                                <span
+                                  className={`${styles['role-badge']} ${styles['admin']}`}
+                                >
+                                  Super Admin
+                                </span>
+                              )
+                            }
+                            const role = getRoleForTenant(tenant.name)
+                            return role ? (
+                              <span
+                                className={`${styles['role-badge']} ${styles[role.toLowerCase()]}`}
+                              >
+                                {role.toLowerCase() === 'admin'
+                                  ? 'Admin'
+                                  : role.toLowerCase() === 'viewer'
+                                    ? 'Member'
+                                    : null}
+                              </span>
+                            ) : null
+                          })()}
+                        </div>
+                        <p
+                          className={styles['tenant-email']}
+                          title={tenant.email}
+                        >
+                          {tenant.email}
+                        </p>
+                      </div>
+                    </div>
+                    <p className={styles['tenant-description']}>
+                      {tenant.description}
+                    </p>
+                    {(isSuperAdmin || isTenantAdmin(tenant.name)) &&
+                      tenant.status?.jobs &&
+                      tenant.status.jobs.length > 0 && (
+                        <div className={styles['status-section']}>
+                          <div className={styles['status-list']}>
+                            {tenant.status.jobs
+                              .filter(
+                                (job: Job) => job.name !== 'CHECK_READINESS',
+                              )
+                              .map((job: Job) => (
+                                <span
+                                  key={job.name}
+                                  className={`${styles['status-badge']} ${getStatusBadgeClass(job.status)}`}
+                                  title={`${JOB_NAMES[job.name] || job.name}: ${getStatusDisplay(job.status)}`}
+                                >
+                                  {job.name === 'INIT_AMS'
+                                    ? 'AMS'
+                                    : job.name === 'INIT_MONGO'
+                                      ? 'MongoDB'
+                                      : job.name === 'CREATE_DOMAIN_NAMES'
+                                        ? 'Domain Names'
+                                        : job.name}
+                                  : {getStatusDisplay(job.status)}
+                                </span>
+                              ))}
+                          </div>
                         </div>
                       )}
-                    </div>
-                    <div className={styles['info-container']}>
-                      <div className={styles['name-role-container']}>
-                        <h3
-                          className={styles['tenant-name']}
-                          title={tenant.name}
-                        >
-                          {tenant.name}
-                        </h3>
-                        {(() => {
-                          if (isSuperAdmin) {
-                            return (
-                              <span
-                                className={`${styles['role-badge']} ${styles['admin']}`}
-                              >
-                                Super Admin
-                              </span>
-                            )
-                          }
-                          const role = getRoleForTenant(tenant.name)
-                          return role ? (
-                            <span
-                              className={`${styles['role-badge']} ${styles[role.toLowerCase()]}`}
-                            >
-                              {role.toLowerCase() === 'admin'
-                                ? 'Admin'
-                                : role.toLowerCase() === 'viewer'
-                                  ? 'Member'
-                                  : null}
-                            </span>
-                          ) : null
-                        })()}
-                      </div>
-                      <p
-                        className={styles['tenant-email']}
-                        title={tenant.email}
-                      >
-                        {tenant.email}
-                      </p>
-                    </div>
                   </div>
-                  <p className={styles['tenant-description']}>
-                    {tenant.description}
-                  </p>
-                  {(isSuperAdmin || isTenantAdmin(tenant.name)) &&
-                    tenant.status?.jobs &&
-                    tenant.status.jobs.length > 0 && (
-                      <div className={styles['status-section']}>
-                        <div className={styles['status-list']}>
-                          {tenant.status.jobs
-                            .filter(
-                              (job: Job) => job.name !== 'CHECK_READINESS',
-                            )
-                            .map((job: Job) => (
-                              <span
-                                key={job.name}
-                                className={`${styles['status-badge']} ${getStatusBadgeClass(job.status)}`}
-                                title={`${JOB_NAMES[job.name] || job.name}: ${getStatusDisplay(job.status)}`}
-                              >
-                                {job.name === 'INIT_AMS'
-                                  ? 'AMS'
-                                  : job.name === 'INIT_MONGO'
-                                    ? 'MongoDB'
-                                    : job.name === 'CREATE_DOMAIN_NAMES'
-                                      ? 'Domain Names'
-                                      : job.name}
-                                : {getStatusDisplay(job.status)}
-                              </span>
-                            ))}
-                        </div>
-                      </div>
-                    )}
-                </div>
-                <div className={styles['card-footer']}>
-                  <button
-                    aria-label="View Tenant Details"
-                    className={`${styles['action-button']} ${styles.view} tooltip`}
-                    data-tip="View Tenant Details"
-                    onClick={() => handleViewDetails(tenant.id!)}
-                  >
-                    <Bars3Icon className={styles['action-icon']} />
-                  </button>
-                  {(isSuperAdmin || isTenantAdmin(tenant.name)) && (
-                    <>
-                      <button
-                        aria-label="Edit Tenant"
-                        className={`${styles['action-button']} ${styles.edit} tooltip`}
-                        data-tip="Edit Tenant"
-                        onClick={() => handleEdit(tenant.id!)}
-                      >
-                        <PencilSquareIcon className={styles['action-icon']} />
-                      </button>
-                      <button
-                        aria-label="Manage Members"
-                        className={`${styles['action-button']} ${styles['manage-members']} tooltip`}
-                        data-tip="Manage Members"
-                        onClick={() => handleManageMembers(tenant.id!)}
-                      >
-                        <UserGroupIcon className={styles['action-icon']} />
-                      </button>
-                    </>
-                  )}
-                  {!isSuperAdmin && (
+                  <div className={styles['card-footer']}>
                     <button
-                      aria-label="View Assigned Projects"
-                      className={`${styles['action-button']} ${styles.assign} tooltip`}
-                      data-tip="View Assigned Projects"
-                      onClick={() => handleAssignProjects(tenant.id!)}
+                      aria-label="View Tenant Details"
+                      className={`${styles['action-button']} ${styles.view} tooltip`}
+                      data-tip="View Tenant Details"
+                      onClick={() => handleViewDetails(tenant.id!)}
                     >
-                      <ClipboardDocumentListIcon
-                        className={styles['action-icon']}
-                      />
+                      <Bars3Icon className={styles['action-icon']} />
                     </button>
-                  )}
-
-                  {isSuperAdmin && (
-                    <>
+                    {(isSuperAdmin || isTenantAdmin(tenant.name)) && (
+                      <>
+                        <button
+                          aria-label="Edit Tenant"
+                          className={`${styles['action-button']} ${styles.edit} tooltip`}
+                          data-tip="Edit Tenant"
+                          onClick={() => handleEdit(tenant.id!)}
+                        >
+                          <PencilSquareIcon className={styles['action-icon']} />
+                        </button>
+                        <button
+                          aria-label="Manage Members"
+                          className={`${styles['action-button']} ${styles['manage-members']} tooltip`}
+                          data-tip="Manage Members"
+                          onClick={() => handleManageMembers(tenant.id!)}
+                        >
+                          <UserGroupIcon className={styles['action-icon']} />
+                        </button>
+                      </>
+                    )}
+                    {!isSuperAdmin && (
                       <button
-                        aria-label="Assign Projects"
+                        aria-label="View Assigned Projects"
                         className={`${styles['action-button']} ${styles.assign} tooltip`}
-                        data-tip="Assign Projects"
+                        data-tip="View Assigned Projects"
                         onClick={() => handleAssignProjects(tenant.id!)}
                       >
-                        <PlusCircleIcon className={styles['action-icon']} />
+                        <ClipboardDocumentListIcon
+                          className={styles['action-icon']}
+                        />
                       </button>
-                    </>
-                  )}
+                    )}
 
-                  {(isSuperAdmin || isTenantAdmin(tenant.name)) && (
-                    <>
+                    {isSuperAdmin && (
+                      <>
+                        <button
+                          aria-label="Assign Projects"
+                          className={`${styles['action-button']} ${styles.assign} tooltip`}
+                          data-tip="Assign Projects"
+                          onClick={() => handleAssignProjects(tenant.id!)}
+                        >
+                          <PlusCircleIcon className={styles['action-icon']} />
+                        </button>
+                      </>
+                    )}
+
+                    {(isSuperAdmin || isTenantAdmin(tenant.name)) && (
+                      <>
+                        <button
+                          aria-label="View Status"
+                          className={`${styles['action-button']} ${styles.status} tooltip`}
+                          data-tip="View Status"
+                          onClick={() =>
+                            navigate(`/tenants/${tenant.id}/status`)
+                          }
+                        >
+                          <ListBulletIcon className={styles['action-icon']} />
+                        </button>
+                        <button
+                          aria-label="Check Readiness"
+                          className={`${styles['action-button']} ${styles.readiness} tooltip`}
+                          data-tip="Check Readiness"
+                          onClick={() =>
+                            navigate(`/tenants/${tenant.id}/readiness`)
+                          }
+                        >
+                          <ShieldCheckIcon className={styles['action-icon']} />
+                        </button>
+                        <button
+                          aria-label="Capabilities"
+                          className="tooltip text-amber-600 cursor-pointer hover:bg-amber-50 rounded-[10px] p-[6px]"
+                          data-tip="Capabilities"
+                          onClick={() =>
+                            navigate(`/tenants/${tenant.id}/capabilities`)
+                          }
+                        >
+                          <Square3Stack3DIcon className="w-[1.3rem]" />
+                        </button>
+                      </>
+                    )}
+
+                    {isSuperAdmin && (
                       <button
-                        aria-label="View Status"
-                        className={`${styles['action-button']} ${styles.status} tooltip`}
-                        data-tip="View Status"
-                        onClick={() => navigate(`/tenants/${tenant.id}/status`)}
-                      >
-                        <ListBulletIcon className={styles['action-icon']} />
-                      </button>
-                      <button
-                        aria-label="Check Readiness"
-                        className={`${styles['action-button']} ${styles.readiness} tooltip`}
-                        data-tip="Check Readiness"
+                        aria-label="Delete Tenant"
+                        className={`${styles['action-button']} ${styles.delete} tooltip`}
+                        data-tip="Delete Tenant"
                         onClick={() =>
-                          navigate(`/tenants/${tenant.id}/readiness`)
+                          handleDeleteClick(tenant.id!, tenant.name)
                         }
                       >
-                        <ShieldCheckIcon className={styles['action-icon']} />
+                        <TrashIcon className={styles['action-icon']} />
                       </button>
-                      <button
-                        aria-label="Capabilities"
-                        className="tooltip text-amber-600 cursor-pointer hover:bg-amber-50 rounded-[10px] p-[6px]"
-                        data-tip="Capabilities"
-                        onClick={() =>
-                          navigate(`/tenants/${tenant.id}/capabilities`)
-                        }
-                      >
-                        <Square3Stack3DIcon className="w-[1.3rem]" />
-                      </button>
-                    </>
-                  )}
-
-                  {isSuperAdmin && (
-                    <button
-                      aria-label="Delete Tenant"
-                      className={`${styles['action-button']} ${styles.delete} tooltip`}
-                      data-tip="Delete Tenant"
-                      onClick={() => handleDeleteClick(tenant.id!, tenant.name)}
-                    >
-                      <TrashIcon className={styles['action-icon']} />
-                    </button>
-                  )}
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))
-          ) : (
-            <div className={styles['empty-state']}>
-              <p className={styles['empty-text']}>No tenants found</p>
-            </div>
-          )}
+              ))
+            : null}
         </div>
       )}
+      {!data || data?.content?.length === 0 ? (
+        <div className={styles['empty-state']}>
+          <p className={styles['empty-text']}>No tenants found</p>
+        </div>
+      ) : null}
 
       {data?.content && data.content?.length > 0 && (
         <div className="flex items-center justify-between px-4 py-1 border border-gray-200 rounded-lg my-4">

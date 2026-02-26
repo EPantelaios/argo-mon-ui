@@ -5,23 +5,18 @@ import {
   useGetTenantReadiness,
   useGetUserTenantById,
   useCheckReadinessMutation,
-  useGetTenantStatus,
   useGetUserTenantStatus,
 } from '@/hooks/useTenants'
-import { useAuth } from '@/auth/useAuth'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import ErrorDisplay from '@/components/ErrorDisplay'
 import Button from '@/components/Button'
 import styles from './TenantReadiness.module.css'
 import type { ReadinessCheckDetail, JobStatus } from '@/types/tenants'
-import { toast, Toaster } from 'sonner'
+import { toast } from 'sonner'
 
 const TenantReadiness = () => {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { profile } = useAuth()
-
-  const isSuperAdmin = profile?.roles?.includes('super_admin')
 
   const { data: tenantData, isLoading: tenantLoading } = useGetUserTenantById(
     id || '',
@@ -33,18 +28,7 @@ const TenantReadiness = () => {
     error: readinessError,
   } = useGetTenantReadiness(id || '', true, 10000)
 
-  const { data: adminStatusData } = useGetTenantStatus(
-    id || '',
-    0,
-    isSuperAdmin,
-  )
-  const { data: userStatusData } = useGetUserTenantStatus(
-    id || '',
-    0,
-    !isSuperAdmin,
-  )
-
-  const statusData = isSuperAdmin ? adminStatusData : userStatusData
+  const { data: statusData } = useGetUserTenantStatus(id || '', 0)
 
   // Compute refetch interval based on CHECK_READINESS job status
   const statusRefetchInterval = useMemo(() => {
@@ -68,20 +52,10 @@ const TenantReadiness = () => {
     return 10000
   }, [statusData])
 
-  const { data: adminStatusDataWithRefetch } = useGetTenantStatus(
+  const { data: statusDataWithRefetch } = useGetUserTenantStatus(
     id || '',
     statusRefetchInterval,
-    isSuperAdmin,
   )
-  const { data: userStatusDataWithRefetch } = useGetUserTenantStatus(
-    id || '',
-    statusRefetchInterval,
-    !isSuperAdmin,
-  )
-
-  const statusDataWithRefetch = isSuperAdmin
-    ? adminStatusDataWithRefetch
-    : userStatusDataWithRefetch
 
   const activeStatusData = statusDataWithRefetch || statusData
 
@@ -203,7 +177,6 @@ const TenantReadiness = () => {
 
   return (
     <div className={styles.header}>
-      <Toaster richColors position="top-center" duration={3000} />
       <div className={styles['title-section']}>
         <div>
           <h1 className="page-title">Tenant Readiness</h1>

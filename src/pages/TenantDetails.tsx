@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useLocation, useNavigate } from 'react-router-dom'
-import { useAuth } from '../auth/useAuth'
-import { useGetTenantById, useGetUserTenantById } from '../hooks/useTenants'
+import { useGetUserTenantById } from '../hooks/useTenants'
 import { useGetUserTenantProjects } from '../hooks/useTenants'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import ErrorDisplay from '@/components/ErrorDisplay'
@@ -23,7 +22,6 @@ const TenantDetails = () => {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const location = useLocation()
-  const { profile } = useAuth()
   const [activeTab, setActiveTab] = useState<'info' | 'reports'>('info')
 
   useEffect(() => {
@@ -35,18 +33,7 @@ const TenantDetails = () => {
     }
   }, [location.hash])
 
-  const isSuperAdmin = profile?.roles?.includes('super_admin')
-
-  const {
-    data: adminTenantData,
-    isLoading: adminLoading,
-    error: adminError,
-  } = useGetTenantById(id || '', isSuperAdmin)
-  const {
-    data: userTenantData,
-    isLoading: userLoading,
-    error: userError,
-  } = useGetUserTenantById(id || '', !isSuperAdmin)
+  const { data: tenantData, isLoading, error } = useGetUserTenantById(id || '')
 
   const {
     data: projectsData,
@@ -54,10 +41,6 @@ const TenantDetails = () => {
     fetchNextPage: fetchNextProjectsPage,
     hasNextPage: hasNextProjectsPage,
   } = useGetUserTenantProjects(id || '', true)
-
-  const tenantData = isSuperAdmin ? adminTenantData : userTenantData
-  const isLoading = isSuperAdmin ? adminLoading : userLoading
-  const error = isSuperAdmin ? adminError : userError
 
   useEffect(() => {
     if (hasNextProjectsPage) {
@@ -126,13 +109,21 @@ const TenantDetails = () => {
         </div> */}
 
         <div className="px-6 py-3 flex flex-col xl:flex-row items-start xl:items-center gap-4 xl:gap-6">
-          <div className="flex-shrink-0 w-16 h-16 bg-white border border-gray-200 rounded flex items-center justify-center p-1 shadow-sm">
-            <img
-              src={tenantData.info.image}
-              alt="Logo"
-              className="object-contain"
-            />
-          </div>
+          {tenantData?.info?.image ? (
+            <div className="flex-shrink-0 w-16 h-16 bg-white border border-gray-200 rounded flex items-center justify-center p-1 shadow-sm">
+              <img
+                src={tenantData.info.image}
+                alt="Logo"
+                className="object-contain"
+              />
+            </div>
+          ) : (
+            <div className={styles['tenant-fallback']}>
+              <span className={styles['fallback-text']}>
+                {tenantData.info.name.charAt(0).toUpperCase()}
+              </span>
+            </div>
+          )}
 
           <div className="flex-shrink-0 xl:border-r border-gray-100 xl:pr-6 xl:mr-2 w-full xl:w-auto">
             <div className="flex items-center gap-2 flex-wrap">

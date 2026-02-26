@@ -5,9 +5,7 @@ import { toast, Toaster } from 'sonner'
 import ErrorDisplay from '@/components/ErrorDisplay'
 import Button from '@/components/Button'
 import {
-  useGetTenantById,
   useGetUserTenantById,
-  useGetTenantProjects,
   useGetUserTenantProjects,
   useAssignTenantProjectsMutation,
 } from '@/hooks/useTenants'
@@ -37,17 +35,10 @@ const AssignProjects = () => {
   const [availableProjects, setAvailableProjects] = useState<ProjectItem[]>([])
   const [assignedProjects, setAssignedProjects] = useState<ProjectItem[]>([])
   const [isInitialized, setIsInitialized] = useState(false)
-  const { data: adminTenantData, error: adminTenantError } = useGetTenantById(
-    tenantId || '',
-    isSuperAdmin,
-  )
-  const { data: userTenantData, error: userTenantError } = useGetUserTenantById(
-    tenantId || '',
-    !isSuperAdmin,
-  )
 
-  const tenantData = isSuperAdmin ? adminTenantData : userTenantData
-  const tenantError = isSuperAdmin ? adminTenantError : userTenantError
+  const { data: tenantData, error: tenantError } = useGetUserTenantById(
+    tenantId || '',
+  )
 
   const isReadOnly = !isSuperAdmin
 
@@ -73,24 +64,10 @@ const AssignProjects = () => {
   const navigate = useNavigate()
 
   const {
-    data: adminProjectsData,
-    fetchNextPage: fetchNextAdminProjectsPage,
-    hasNextPage: hasNextAdminProjectsPage,
-  } = useGetTenantProjects(tenantId || '', isSuperAdmin)
-
-  const {
-    data: userProjectsData,
-    fetchNextPage: fetchNextUserProjectsPage,
-    hasNextPage: hasNextUserProjectsPage,
-  } = useGetUserTenantProjects(tenantId || '', !isSuperAdmin)
-
-  const tenantProjectsData = isSuperAdmin ? adminProjectsData : userProjectsData
-  const fetchNextTenantProjectsPage = isSuperAdmin
-    ? fetchNextAdminProjectsPage
-    : fetchNextUserProjectsPage
-  const hasNextTenantProjectsPage = isSuperAdmin
-    ? hasNextAdminProjectsPage
-    : hasNextUserProjectsPage
+    data: tenantProjectsData,
+    fetchNextPage: fetchNextTenantProjectsPage,
+    hasNextPage: hasNextTenantProjectsPage,
+  } = useGetUserTenantProjects(tenantId || '')
 
   const {
     data: allProjectsData,

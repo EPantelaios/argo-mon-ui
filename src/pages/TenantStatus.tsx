@@ -1,8 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom'
 import {
-  useGetTenantById,
   useGetUserTenantById,
-  useGetTenantStatus,
   useGetUserTenantStatus,
   useUpdateTenantStatusMutation,
 } from '@/hooks/useTenants'
@@ -101,25 +99,13 @@ const TenantStatus = () => {
   const [selectedStatus, setSelectedStatus] = useState<JobStatus | null>(null)
   const [jobMessage, setJobMessage] = useState<string>('')
 
-  const { data: adminTenantData } = useGetTenantById(id || '', isSuperAdmin)
-  const { data: userTenantData } = useGetUserTenantById(id || '', !isSuperAdmin)
-
-  const tenantData = isSuperAdmin ? adminTenantData : userTenantData
+  const { data: tenantData } = useGetUserTenantById(id || '')
 
   const {
-    data: adminStatusData,
-    isLoading: adminStatusLoading,
-    error: adminStatusError,
-  } = useGetTenantStatus(id || '', 0, isSuperAdmin)
-  const {
-    data: userStatusData,
-    isLoading: userStatusLoading,
-    error: userStatusError,
-  } = useGetUserTenantStatus(id || '', 0, !isSuperAdmin)
-
-  const statusData = isSuperAdmin ? adminStatusData : userStatusData
-  const statusLoading = isSuperAdmin ? adminStatusLoading : userStatusLoading
-  const statusError = isSuperAdmin ? adminStatusError : userStatusError
+    data: statusData,
+    isLoading: statusLoading,
+    error: statusError,
+  } = useGetUserTenantStatus(id || '')
 
   const updateStatusMutation = useUpdateTenantStatusMutation()
 

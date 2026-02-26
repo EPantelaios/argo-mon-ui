@@ -143,6 +143,7 @@ export const useDeletePageMutation = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['all-pages'] })
+      queryClient.invalidateQueries({ queryKey: ['user-pages'] })
     },
     onError: (error) => {
       console.error('Page delete error:', error)

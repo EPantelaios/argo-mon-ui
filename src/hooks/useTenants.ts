@@ -6,21 +6,15 @@ import {
 } from '@tanstack/react-query'
 import { useAuth } from '@/auth/useAuth'
 import {
-  fetchTenants,
-  fetchTenantById,
   fetchCreateTenant,
-  fetchUpdateTenant,
   fetchDeleteTenant,
   fetchAssignTenantProjects,
-  fetchTenantProjects,
-  fetchContactTypes,
   fetchUserTenants,
   fetchUserTenantById,
   fetchUpdateUserTenant,
   fetchUserTenantProjects,
   fetchUserTenantStatus,
   fetchUserContactTypes,
-  fetchTenantStatus,
   updateTenantStatus,
   fetchMembers,
   fetchTenantMembers,
@@ -47,44 +41,6 @@ import type {
 } from '@/types/tenants'
 import type { ProjectList } from '@/types/projects'
 
-export const useGetTenants = (
-  page: number = 1,
-  size: number = 10,
-  search?: string,
-  enabled: boolean = true,
-) => {
-  const { token } = useAuth()
-
-  return useQuery<TenantList, Error>({
-    queryKey: ['tenants', page, size, search],
-    queryFn: () => {
-      if (!token) {
-        throw new Error('No authentication token available')
-      }
-      return fetchTenants(token, page, size, search)
-    },
-    retry: false,
-    refetchOnMount: 'always',
-    enabled: enabled && !!token,
-  })
-}
-
-export const useGetTenantById = (id: string, enabled: boolean = true) => {
-  const { token } = useAuth()
-
-  return useQuery<Tenant, Error>({
-    queryKey: ['tenant', id],
-    queryFn: () => {
-      if (!token) {
-        throw new Error('No authentication token available')
-      }
-      return fetchTenantById(id, token)
-    },
-    retry: false,
-    enabled: enabled && !!token && !!id,
-  })
-}
-
 export const useCreateTenantMutation = () => {
   const queryClient = useQueryClient()
   const { token } = useAuth()
@@ -104,29 +60,6 @@ export const useCreateTenantMutation = () => {
     },
     onError: (error) => {
       console.error('Tenant create error:', error)
-    },
-  })
-}
-
-export const useUpdateTenantMutation = () => {
-  const queryClient = useQueryClient()
-  const { token } = useAuth()
-
-  return useMutation<Tenant, Error, { id: string; data: Tenant }>({
-    mutationFn: ({ id, data }) => {
-      if (!token) {
-        throw new Error('No authentication token available')
-      }
-      return fetchUpdateTenant(id, data, token)
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tenants'] })
-      queryClient.invalidateQueries({ queryKey: ['tenant'] })
-      queryClient.invalidateQueries({ queryKey: ['user-tenants'] })
-      queryClient.invalidateQueries({ queryKey: ['user-tenant'] })
-    },
-    onError: (error) => {
-      console.error('Tenant update error:', error)
     },
   })
 }
@@ -162,10 +95,7 @@ export const useAssignTenantProjectsMutation = () => {
       }
       return fetchAssignTenantProjects(data, token)
     },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({
-        queryKey: ['tenant-projects', variables.tenant_id],
-      })
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['all-projects'] })
     },
     onError: (error) => {
@@ -174,49 +104,6 @@ export const useAssignTenantProjectsMutation = () => {
   })
 }
 
-export const useGetTenantProjects = (
-  tenantId: string,
-  enabled: boolean = true,
-) => {
-  const { token } = useAuth()
-
-  return useInfiniteQuery<TenantList, Error>({
-    queryKey: ['tenant-projects', tenantId],
-    queryFn: ({ pageParam = 1 }) => {
-      if (!token) {
-        throw new Error('No authentication token available')
-      }
-      return fetchTenantProjects(tenantId, token, pageParam as number, 10)
-    },
-    getNextPageParam: (lastPage) => {
-      const currentPage = lastPage.number_of_page
-      const totalPages = lastPage.total_pages
-      return currentPage < totalPages ? currentPage + 1 : undefined
-    },
-    initialPageParam: 1,
-    retry: false,
-    enabled: enabled && !!token && !!tenantId,
-    refetchOnMount: 'always',
-  })
-}
-
-export const useGetContactTypes = (enabled: boolean = true) => {
-  const { token } = useAuth()
-
-  return useQuery<string[], Error>({
-    queryKey: ['contact-types'],
-    queryFn: () => {
-      if (!token) {
-        throw new Error('No authentication token available')
-      }
-      return fetchContactTypes(token)
-    },
-    retry: false,
-    enabled: enabled && !!token,
-  })
-}
-
-// Hooks for admin and viewer roles
 export const useGetUserTenants = (
   page: number = 1,
   size: number = 10,
@@ -335,27 +222,6 @@ export const useGetUserContactTypes = (enabled: boolean = true) => {
     },
     retry: false,
     enabled: enabled && !!token,
-  })
-}
-
-export const useGetTenantStatus = (
-  id: string,
-  refetchInterval: number = 0,
-  enabled: boolean = true,
-) => {
-  const { token } = useAuth()
-
-  return useQuery<{ name: string; status: { jobs: Job[] } }, Error>({
-    queryKey: ['tenant-status', id],
-    queryFn: () => {
-      if (!token) {
-        throw new Error('No authentication token available')
-      }
-      return fetchTenantStatus(id, token)
-    },
-    retry: false,
-    refetchInterval,
-    enabled: enabled && !!token && !!id,
   })
 }
 
@@ -514,7 +380,7 @@ export const useGetTenantByName = () => {
       if (!token) {
         throw new Error('No authentication token available')
       }
-      return fetchTenants(token, 1, 1, tenantName)
+      return fetchUserTenants(token, 1, 1, tenantName)
     },
     onError: (error) => {
       console.error('Fetch tenant by name error:', error)

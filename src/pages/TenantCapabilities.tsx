@@ -1,6 +1,5 @@
-import { useAuth } from '@/auth/useAuth'
 import LoadingSpinner from '@/components/LoadingSpinner'
-import { useGetTenantById, useGetUserTenantById } from '@/hooks/useTenants'
+import { useGetUserTenantById } from '@/hooks/useTenants'
 import {
   ArrowBigUp,
   ArrowLeftIcon,
@@ -217,21 +216,7 @@ const CapabilityCard = ({
 
 const TenantCapabilities = () => {
   const { id } = useParams<{ id: string }>()
-  const { profile } = useAuth()
-
-  const isSuperAdmin = profile?.roles?.includes('super_admin')
-
-  const { data: adminTenantData, isLoading: adminLoading } = useGetTenantById(
-    id || '',
-    isSuperAdmin,
-  )
-  const { data: userTenantData, isLoading: userLoading } = useGetUserTenantById(
-    id || '',
-    !isSuperAdmin,
-  )
-
-  const tenantData = isSuperAdmin ? adminTenantData : userTenantData
-  const isLoading = isSuperAdmin ? adminLoading : userLoading
+  const { data: tenantData, isLoading } = useGetUserTenantById(id || '')
 
   if (isLoading) {
     return (

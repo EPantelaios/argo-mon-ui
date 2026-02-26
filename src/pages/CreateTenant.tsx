@@ -5,13 +5,10 @@ import { PhotoIcon, XMarkIcon } from '@heroicons/react/16/solid'
 import { ArrowLeftIcon } from '@heroicons/react/16/solid'
 import {
   useCreateTenantMutation,
-  useUpdateTenantMutation,
-  useGetTenantById,
   useGetUserTenantById,
   useUpdateUserTenantMutation,
 } from '@/hooks/useTenants'
 import type { Metadata } from '@/types/tenants'
-import { useAuth } from '@/auth/useAuth'
 import { toast, Toaster } from 'sonner'
 import ErrorDisplay from '@/components/ErrorDisplay'
 import Button from '../components/Button'
@@ -25,12 +22,9 @@ const BACKEND_API = import.meta.env.VITE_BACKEND_URI
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 const CreateTenant = () => {
-  const { profile } = useAuth()
   const { id: tenantId } = useParams<{ id?: string }>()
   const isEditMode = Boolean(tenantId)
   const navigate = useNavigate()
-
-  const isSuperAdmin = profile?.roles?.includes('super_admin')
 
   const [formData, setFormData] = useState({
     name: '',
@@ -72,23 +66,13 @@ const CreateTenant = () => {
     useState(false)
 
   const createMutation = useCreateTenantMutation()
-  const adminUpdateMutation = useUpdateTenantMutation()
-  const userUpdateMutation = useUpdateUserTenantMutation()
-  const updateMutation = isSuperAdmin ? adminUpdateMutation : userUpdateMutation
+  const updateMutation = useUpdateUserTenantMutation()
 
   const {
-    data: adminTenantData,
-    isLoading: adminLoading,
-    error: adminError,
-  } = useGetTenantById(tenantId || '', isSuperAdmin)
-  const {
-    data: userTenantData,
-    isLoading: userLoading,
-    error: userError,
-  } = useGetUserTenantById(tenantId || '', !isSuperAdmin)
-  const tenantData = isSuperAdmin ? adminTenantData : userTenantData
-  const isTenantLoading = isSuperAdmin ? adminLoading : userLoading
-  const tenantError = isSuperAdmin ? adminError : userError
+    data: tenantData,
+    isLoading: isTenantLoading,
+    error: tenantError,
+  } = useGetUserTenantById(tenantId || '')
 
   // Load tenant data in edit mode
   useEffect(() => {

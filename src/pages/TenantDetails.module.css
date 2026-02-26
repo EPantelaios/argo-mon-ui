@@ -78,14 +78,20 @@
   font-style: italic;
 }
 
-.logo {
-  width: 80px;
-  height: 80px;
-  object-fit: contain;
+.tenant-fallback {
+  width: 4rem;
+  height: 4rem;
   border-radius: 0.5rem;
-  border: 1px solid #e5e7eb;
-  padding: 0.5rem;
-  background-color: white;
+  background-color: #6c7788;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.fallback-text {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: white;
 }
 
 .contacts-grid {

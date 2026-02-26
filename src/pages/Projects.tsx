@@ -158,79 +158,85 @@ const Projects = () => {
         </div>
       ) : (
         <div className={styles.grid}>
-          {data?.content && data.content.length > 0 ? (
-            data.content.map((project) => (
-              <div key={project.id} className={styles.card}>
-                <div className={styles['card-content']}>
-                  <div className={styles['card-header']}>
-                    <h3 className={styles['project-name']} title={project.name}>
-                      {project.name}
-                    </h3>
+          {data?.content && data.content.length > 0
+            ? data.content.map((project) => (
+                <div key={project.id} className={styles.card}>
+                  <div className={styles['card-content']}>
+                    <div className={styles['card-header']}>
+                      <h3
+                        className={styles['project-name']}
+                        title={project.name}
+                      >
+                        {project.name}
+                      </h3>
+                    </div>
+
+                    <div className={styles['dates-section']}>
+                      <div className={styles['date-row']}>
+                        <span className={styles['label']}>Start Date:</span>
+                        <span className={styles['date-value']}>
+                          {formatDate(project.start_date)}
+                        </span>
+                      </div>
+                      <div className={styles['date-row']}>
+                        <span className={styles['label']}>End Date:</span>
+                        <span className={styles['date-value']}>
+                          {formatDate(project.end_date)}
+                        </span>
+                      </div>
+                      <div className={styles['date-row']}>
+                        <span className={styles['label']}>
+                          Sustainability End Date:
+                        </span>
+                        <span className={styles['date-value']}>
+                          {formatDate(project.sustainability_end_date)}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className={styles['policy-section']}>
+                      <div className={styles['label']}>
+                        Data Retention Policy:
+                      </div>
+                      <p
+                        className={styles['policy-text']}
+                        title={project.data_retention_policy}
+                      >
+                        {project.data_retention_policy}
+                      </p>
+                    </div>
                   </div>
 
-                  <div className={styles['dates-section']}>
-                    <div className={styles['date-row']}>
-                      <span className={styles['label']}>Start Date:</span>
-                      <span className={styles['date-value']}>
-                        {formatDate(project.start_date)}
-                      </span>
-                    </div>
-                    <div className={styles['date-row']}>
-                      <span className={styles['label']}>End Date:</span>
-                      <span className={styles['date-value']}>
-                        {formatDate(project.end_date)}
-                      </span>
-                    </div>
-                    <div className={styles['date-row']}>
-                      <span className={styles['label']}>
-                        Sustainability End Date:
-                      </span>
-                      <span className={styles['date-value']}>
-                        {formatDate(project.sustainability_end_date)}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className={styles['policy-section']}>
-                    <div className={styles['label']}>
-                      Data Retention Policy:
-                    </div>
-                    <p
-                      className={styles['policy-text']}
-                      title={project.data_retention_policy}
+                  <div className={styles['card-footer']}>
+                    <button
+                      aria-label="Edit Project"
+                      className={`${styles['action-button']} ${styles.edit} tooltip`}
+                      data-tip="Edit"
+                      onClick={() => handleEdit(project.id!)}
                     >
-                      {project.data_retention_policy}
-                    </p>
+                      <PencilSquareIcon className={styles['action-icon']} />
+                    </button>
+                    <button
+                      aria-label="Delete Project"
+                      className={`${styles['action-button']} ${styles.delete} tooltip`}
+                      data-tip="Delete"
+                      onClick={() =>
+                        handleDeleteClick(project.id!, project.name)
+                      }
+                    >
+                      <TrashIcon className={styles['action-icon']} />
+                    </button>
                   </div>
                 </div>
-
-                <div className={styles['card-footer']}>
-                  <button
-                    aria-label="Edit Project"
-                    className={`${styles['action-button']} ${styles.edit} tooltip`}
-                    data-tip="Edit"
-                    onClick={() => handleEdit(project.id!)}
-                  >
-                    <PencilSquareIcon className={styles['action-icon']} />
-                  </button>
-                  <button
-                    aria-label="Delete Project"
-                    className={`${styles['action-button']} ${styles.delete} tooltip`}
-                    data-tip="Delete"
-                    onClick={() => handleDeleteClick(project.id!, project.name)}
-                  >
-                    <TrashIcon className={styles['action-icon']} />
-                  </button>
-                </div>
-              </div>
-            ))
-          ) : (
-            <div className={styles['empty-state']}>
-              <p className={styles['empty-text']}>No projects found</p>
-            </div>
-          )}
+              ))
+            : null}
         </div>
       )}
+      {!data || data?.content?.length === 0 ? (
+        <div className={styles['empty-state']}>
+          <p className={styles['empty-text']}>No projects found</p>
+        </div>
+      ) : null}
 
       {data?.content && data.content.length > 0 && (
         <div className="flex items-center justify-between px-4 py-1 border border-gray-200 rounded-lg my-4">
